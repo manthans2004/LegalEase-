@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment variables
+backend/.env
+.env
+
+# Logs
+*.log
+logs/
+
+# Runtime data and databases
+*.pid
+*.seed
+*.pid.lock
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# Build directories
+frontend/build/
+backend/dist/
+
+# Uploads (audio files - you might not want to upload these)
+backend/uploads/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
