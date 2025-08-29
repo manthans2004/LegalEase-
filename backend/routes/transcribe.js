@@ -82,13 +82,23 @@ router.post('/', upload.single('audio'), async (req, res) => {
 // GET /api/transcribe/history - Get user's transcription history (PROTECTED)
 router.get('/history', auth, async (req, res) => {
   try {
+    const { page = 1, limit = 10 } = req.query;
+    
     const transcriptions = await Transcription.find({ user: req.user._id })
       .sort({ createdAt: -1 })
-      .select('-filePath'); // Don't return file path for security
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .select('-filePath -__v') // Exclude sensitive/unnecessary fields
+      .lean(); // Better performance
+
+    const total = await Transcription.countDocuments({ user: req.user._id });
 
     res.json({
       success: true,
-      transcriptions: transcriptions
+      transcriptions,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total
     });
   } catch (error) {
     console.error('❌ Error fetching history:', error);
