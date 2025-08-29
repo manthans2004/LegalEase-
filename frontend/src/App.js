@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
-import { Mic, Square, Loader, CheckCircle, XCircle, ChevronDown } from 'react-feather';
+import { Mic, Square, Loader, CheckCircle, XCircle, ChevronDown, User, LogOut } from 'react-feather';
+import { useAuth } from './context/AuthContext';
+import AuthForms from './components/AuthForms';
+import UserProfile from './components/UserProfile';
 import './App.css';
 
 const API_BASE_URL = 'http://localhost:5000';
@@ -14,6 +17,10 @@ function App() {
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [transcriptionHistory, setTranscriptionHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  
+  const { user, logout, loading } = useAuth(); 
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -90,7 +97,9 @@ function App() {
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/transcribe`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
       setTranscription(response.data.text);
@@ -121,11 +130,46 @@ function App() {
     setShowHistory(false);
   };
 
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <Loader className="spin" size={48} />
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <header className="app-header">
-        <h1>LegalEase</h1>
-        <p>Voice-based Legal Form Assistant</p>
+        <div className="header-content">
+          <div className="header-title">
+            <h1>LegalEase</h1>
+            <p>Voice-based Legal Form Assistant</p>
+          </div>
+          <div className="header-auth">
+            {user ? (
+              <div className="user-info">
+                <span>Welcome, {user.username}</span>
+                <button 
+                  onClick={() => setShowProfileModal(true)} 
+                  className="btn btn-profile"
+                  title="View Profile"
+                >
+                  <User size={16} />
+                </button>
+                <button onClick={logout} className="btn btn-logout" title="Logout">
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setShowAuthModal(true)} className="btn btn-login">
+                <User size={16} />
+                Login / Register
+              </button>
+            )}
+          </div>
+        </div>
       </header>
 
       <main className="app-main">
@@ -270,6 +314,13 @@ function App() {
           )}
         </section>
       </main>
+
+      {showAuthModal && (
+        <AuthForms onClose={() => setShowAuthModal(false)} />
+      )}
+      {showProfileModal && (
+        <UserProfile onClose={() => setShowProfileModal(false)} />
+      )}
     </div>
   );
 }

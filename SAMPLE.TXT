@@ -1,0 +1,20 @@
+# First, check what files have changes
+git status
+
+
+git add .
+
+# Commit only the README.md with a message
+git commit -m "feat: Complete full-stack authentication system
+
+- Backend: JWT authentication with User model, auth middleware, and protected routes
+- Frontend: React auth context, login/register modals, and user profile dashboard  
+- Features: User registration, login, logout, profile management with statistics
+- Security: Password hashing with bcrypt, token-based authentication, protected API endpoints
+- UI: Modern responsive design with professional modals, gradients, and animations
+- Architecture: Complete separation of concerns with context API and middleware
+- New files: Auth routes, User model, auth middleware, React context, profile components
+- Enhanced: Server.js with auth routes, App.js with profile integration"
+
+# Push the commit to GitHub
+git push origin main
