@@ -212,3 +212,120 @@
     grid-template-columns: 1fr;
   }
 }
+/* Add these new styles to your existing UserProfile.css */
+
+.profile-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #7f8c8d;
+}
+
+.profile-error {
+  background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+  border: 1px solid #ff9999;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.profile-error p {
+  margin: 0 0 0.5rem 0;
+  color: #e74c3c;
+}
+
+.retry-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.retry-btn:hover {
+  background: #c0392b;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.status-item {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.status-name {
+  display: block;
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  text-transform: capitalize;
+  margin-bottom: 0.25rem;
+}
+
+.status-count {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #27ae60;
+}
+
+/* Enhanced language tags with counts */
+.language-tag {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  padding: 0.5rem 0.8rem;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.language-tag::before {
+  content: '•';
+  font-size: 1.2rem;
+}
+
+/* Animation for stats loading */
+@keyframes statsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stats-card, .languages-card {
+  animation: statsFadeIn 0.5s ease-out;
+}
+
+/* Responsive improvements */
+@media (max-width: 480px) {
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  }
+  
+  .language-tag {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.6rem;
+  }
+}
