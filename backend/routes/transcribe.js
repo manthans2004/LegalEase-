@@ -171,5 +171,48 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+// GET /api/transcribe/history - Now with search and filters
+router.get('/history', auth, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', language = '', status = '' } = req.query;
+    
+    // Build search query
+    let query = { user: req.user._id };
+    
+    if (search) {
+      query.transcribedText = { $regex: search, $options: 'i' }; // Case-insensitive search
+    }
+    
+    if (language) {
+      query.language = language;
+    }
+    
+    if (status) {
+      query.status = status;
+    }
+
+    const transcriptions = await Transcription.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .select('-filePath -__v')
+      .lean();
+
+    const total = await Transcription.countDocuments(query);
+
+    res.json({
+      success: true,
+      transcriptions,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total,
+      hasMore: page < Math.ceil(total / limit)
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching history:', error);
+    res.status(500).json({ error: 'Failed to fetch transcription history' });
+  }
+});
 
 module.exports = router;

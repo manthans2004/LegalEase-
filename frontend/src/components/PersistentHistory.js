@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { transcriptionService } from '../services/transcriptionService';
-import { Loader, Trash2, Calendar, Clock, FileText } from 'react-feather';
+import { Loader, Trash2, Calendar, Clock, FileText, Search, X } from 'react-feather';
 import './PersistentHistory.css';
 
 const PersistentHistory = ({ onSelectTranscription, onClose }) => {
@@ -10,6 +10,10 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  
   const { user } = useAuth();
 
   useEffect(() => {
@@ -18,19 +22,34 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
     }
   }, [user, currentPage]);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (pageNum = currentPage, search = searchTerm) => {
     try {
-      setLoading(true);
-      const data = await transcriptionService.getHistory(currentPage, 10);
+      setIsSearching(true);
+      const data = await transcriptionService.getHistory(pageNum, 10, search);
       setTranscriptions(data.transcriptions);
       setTotalPages(data.totalPages);
+      setCurrentPage(data.currentPage);
+      setTotalItems(data.total);
       setError('');
     } catch (err) {
       setError('Failed to load history');
       console.error('History fetch error:', err);
     } finally {
+      setIsSearching(false);
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    fetchHistory(1, searchTerm);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setCurrentPage(1);
+    fetchHistory(1, '');
   };
 
   const handleDelete = async (id, e) => {
@@ -42,6 +61,7 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
     try {
       await transcriptionService.deleteTranscription(id);
       setTranscriptions(transcriptions.filter(t => t._id !== id));
+      fetchHistory(currentPage, searchTerm);
     } catch (err) {
       setError('Failed to delete transcription');
     }
@@ -55,6 +75,20 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const formatLanguageName = (code) => {
+    const languageNames = {
+      en: 'English',
+      hi: 'Hindi',
+      ta: 'Tamil',
+      te: 'Telugu',
+      kn: 'Kannada',
+      ml: 'Malayalam',
+      bn: 'Bengali',
+      mr: 'Marathi'
+    };
+    return languageNames[code] || code.toUpperCase();
   };
 
   if (!user) {
@@ -76,25 +110,68 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
         <button onClick={onClose} className="close-btn">×</button>
       </div>
 
-      {loading && (
+      {/* Simple Search Box */}
+      <div className="search-box-simple">
+        <form onSubmit={handleSearch} className="search-form">
+          <div className="search-input-container">
+            <Search size={18} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search your transcriptions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+              disabled={loading}
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="clear-search-btn"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <button type="submit" className="search-btn" disabled={loading}>
+            Search
+          </button>
+        </form>
+      </div>
+
+      {!loading && !isSearching && totalItems > 0 && (
+        <div className="search-stats">
+          Found {totalItems} transcription{totalItems !== 1 ? 's' : ''}
+          {searchTerm && ' for "' + searchTerm + '"'}
+        </div>
+      )}
+
+      {(loading || isSearching) && (
         <div className="history-loading">
           <Loader className="spin" size={32} />
-          <p>Loading your history...</p>
+          <p>{isSearching ? 'Searching...' : 'Loading your history...'}</p>
         </div>
       )}
 
       {error && (
         <div className="history-error">
           <p>{error}</p>
-          <button onClick={fetchHistory} className="retry-btn">Retry</button>
+          <button onClick={() => fetchHistory()} className="retry-btn">Retry</button>
         </div>
       )}
 
-      {!loading && transcriptions.length === 0 && (
+      {!loading && !isSearching && transcriptions.length === 0 && (
         <div className="history-empty">
           <FileText size={48} />
-          <h4>No transcriptions yet</h4>
-          <p>Your transcriptions will appear here once you start using the app.</p>
+          <h4>
+            {searchTerm ? 'No matching transcriptions' : 'No transcriptions yet'}
+          </h4>
+          <p>
+            {searchTerm 
+              ? 'Try a different search term'
+              : 'Your transcriptions will appear here once you start using the app'
+            }
+          </p>
         </div>
       )}
 
@@ -106,8 +183,12 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
             onClick={() => onSelectTranscription(transcription)}
           >
             <div className="item-header">
-              <span className="language-badge">{transcription.language.toUpperCase()}</span>
-              <span className="status-badge status-completed">{transcription.status}</span>
+              <span className="language-badge">
+                {formatLanguageName(transcription.language)}
+              </span>
+              <span className={`status-badge status-${transcription.status}`}>
+                {transcription.status}
+              </span>
               <button
                 onClick={(e) => handleDelete(transcription._id, e)}
                 className="delete-btn"
@@ -119,9 +200,9 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
             
             <div className="item-content">
               <p className="transcription-text">
-                {transcription.transcribedText.length > 150
+                {transcription.transcribedText && transcription.transcribedText.length > 150
                   ? transcription.transcribedText.substring(0, 150) + '...'
-                  : transcription.transcribedText
+                  : transcription.transcribedText || 'No transcription text available'
                 }
               </p>
             </div>
@@ -131,10 +212,12 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
                 <Calendar size={12} />
                 {formatDate(transcription.createdAt)}
               </span>
-              <span className="duration-info">
-                <Clock size={12} />
-                {transcription.duration || 'N/A'}
-              </span>
+              {transcription.duration && (
+                <span className="duration-info">
+                  <Clock size={12} />
+                  {transcription.duration}
+                </span>
+              )}
             </div>
           </div>
         ))}
@@ -143,8 +226,12 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
       {totalPages > 1 && (
         <div className="history-pagination">
           <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
+            onClick={() => {
+              const newPage = Math.max(currentPage - 1, 1);
+              setCurrentPage(newPage);
+              fetchHistory(newPage, searchTerm);
+            }}
+            disabled={currentPage === 1 || isSearching}
           >
             Previous
           </button>
@@ -152,8 +239,12 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
           <span>Page {currentPage} of {totalPages}</span>
           
           <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
+            onClick={() => {
+              const newPage = Math.min(currentPage + 1, totalPages);
+              setCurrentPage(newPage);
+              fetchHistory(newPage, searchTerm);
+            }}
+            disabled={currentPage === totalPages || isSearching}
           >
             Next
           </button>
