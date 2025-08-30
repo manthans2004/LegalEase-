@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { transcriptionService } from '../services/transcriptionService';
-import { Loader, Trash2, Calendar, Clock, FileText, Search, X } from 'react-feather';
+import { Loader, Trash2, Calendar, Clock, FileText, Search, X, Download, File } from 'react-feather';
+import { exportService } from '../services/exportService';
 import './PersistentHistory.css';
 
 const PersistentHistory = ({ onSelectTranscription, onClose }) => {
@@ -20,6 +21,7 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
     if (user) {
       fetchHistory();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, currentPage]);
 
   const fetchHistory = async (pageNum = currentPage, search = searchTerm) => {
@@ -50,6 +52,29 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
     setSearchTerm('');
     setCurrentPage(1);
     fetchHistory(1, '');
+  };
+
+  const handleExport = async (transcription, format, e) => {
+    e.stopPropagation();
+    
+    try {
+      switch (format) {
+        case 'pdf':
+          await exportService.exportToPDF(transcription, `transcription-${transcription._id}`);
+          break;
+        case 'txt':
+          exportService.exportToTXT(transcription, `transcription-${transcription._id}`);
+          break;
+        case 'doc':
+          exportService.exportToDOC(transcription, `transcription-${transcription._id}`);
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      setError('Failed to export transcription');
+      console.error('Export error:', error);
+    }
   };
 
   const handleDelete = async (id, e) => {
@@ -189,13 +214,30 @@ const PersistentHistory = ({ onSelectTranscription, onClose }) => {
               <span className={`status-badge status-${transcription.status}`}>
                 {transcription.status}
               </span>
-              <button
-                onClick={(e) => handleDelete(transcription._id, e)}
-                className="delete-btn"
-                title="Delete transcription"
-              >
-                <Trash2 size={14} />
-              </button>
+              
+              <div className="item-actions">
+                <button
+                  onClick={(e) => handleExport(transcription, 'pdf', e)}
+                  className="export-btn"
+                  title="Download as PDF"
+                >
+                  <FileText size={12} />
+                </button>
+                <button
+                  onClick={(e) => handleExport(transcription, 'txt', e)}
+                  className="export-btn"
+                  title="Download as Text"
+                >
+                  <File size={12} />
+                </button>
+                <button
+                  onClick={(e) => handleDelete(transcription._id, e)}
+                  className="delete-btn"
+                  title="Delete transcription"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
             </div>
             
             <div className="item-content">
