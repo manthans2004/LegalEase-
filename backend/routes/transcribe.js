@@ -47,31 +47,45 @@ router.post('/', upload.single('audio'), async (req, res) => {
     // SIMULATION: Replace this with real Bhashini API call later
     console.log('⏳ Simulating call to BHASHINI API...');
 
-    setTimeout(async () => {
-      try {
-        const mockTranscribedText = "This is a mock transcription. Please configure the BHASHINI API keys to get real transcriptions.";
+    // REAL Google Speech-to-Text transcription
+try {
+  console.log('🔄 Starting REAL Google Speech-to-Text transcription...');
 
-        // Update the Transcription record
-        savedTranscription.transcribedText = mockTranscribedText;
-        savedTranscription.status = 'completed';
-        await savedTranscription.save();
-        
-        console.log('✅ Transcription completed successfully');
+  const GoogleSpeechService = require('../services/googleSpeechService');
+  const transcribedText = await GoogleSpeechService.transcribeAudio(
+    req.file.path,
+    language
+  );
 
-        // Send response
-        res.json({
-          success: true,
-          message: 'Transcription successful',
-          transcriptionId: savedTranscription._id,
-          text: mockTranscribedText,
-          isAuthenticated: !!userId // Tell frontend if user is logged in
-        });
+  // Update the Transcription record
+  savedTranscription.transcribedText = transcribedText;
+  savedTranscription.status = 'completed';
+  await savedTranscription.save();
+  
+  console.log('✅ Transcription completed successfully');
 
-      } catch (updateError) {
-        console.error('❌ Error updating transcription:', updateError);
-        res.status(500).json({ error: 'Failed to finalize transcription' });
-      }
-    }, 3000);
+  // Send response
+  res.json({
+    success: true,
+    message: 'Transcription successful',
+    transcriptionId: savedTranscription._id,
+    text: transcribedText,
+    isAuthenticated: !!userId
+  });
+
+} catch (transcriptionError) {
+  console.error('❌ Transcription failed:', transcriptionError.message);
+  
+  // Update status to failed
+  savedTranscription.status = 'failed';
+  savedTranscription.error = transcriptionError.message;
+  await savedTranscription.save();
+  
+  res.status(500).json({ 
+    success: false,
+    error: transcriptionError.message
+  });
+}
 
   } catch (dbError) {
     console.error('❌ Database error:', dbError);

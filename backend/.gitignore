@@ -17,3 +17,6 @@ logs
 
 # Coverage directory used by tools like istanbul
 coverage/
+# Google Cloud credentials
+google-credentials.json
+*.json
